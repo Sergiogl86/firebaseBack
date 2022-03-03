@@ -42,7 +42,7 @@ const postItem = async (
   await db.collection("items").add(req.body);
 
   const bucket = storage.bucket("gs://consulta-bd.appspot.com");
-  const file = bucket.file(`path/to/${req.body.name}.jpg`);
+  const file = bucket.file(`files/${req.body.name}.jpg`);
 
   const url = req.body.file;
 
@@ -52,7 +52,7 @@ const postItem = async (
     responseType: "stream",
   });
 
-  const contentType = response.headers;
+  const contentType = response.headers["content-type"];
 
   console.log(contentType);
 
@@ -65,7 +65,7 @@ const postItem = async (
     },
   });
 
-  response.data.pipe(writeStream);
+  await response.data.pipe(writeStream);
   /* await download(req.body.file, req.body.name); */
 
   /* const bucket = storage.bucket("gs://consulta-bd.appspot.com");
