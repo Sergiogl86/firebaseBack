@@ -4,7 +4,11 @@ import chalk from "chalk";
 
 import Debug from "debug";
 
-import db from "../../database/index";
+import Axios from "axios";
+
+import { db, storage } from "../../database/index";
+
+import download from "../middlewares/download";
 
 const debug = Debug("firebaseback:itemsController");
 
@@ -36,6 +40,37 @@ const postItem = async (
   debug(chalk.blue(JSON.stringify(req.body)));
 
   await db.collection("items").add(req.body);
+
+  const bucket = storage.bucket("gs://consulta-bd.appspot.com");
+  const file = bucket.file(`path/to/${req.body.name}.jpg`);
+
+  const url = req.body.file;
+
+  const response = await Axios({
+    method: "GET",
+    url,
+    responseType: "stream",
+  });
+
+  const contentType = response.headers;
+
+  console.log(contentType);
+
+  const writeStream = file.createWriteStream({
+    metadata: {
+      contentType,
+      metadata: {
+        myValue: 123,
+      },
+    },
+  });
+
+  response.data.pipe(writeStream);
+  /* await download(req.body.file, req.body.name); */
+
+  /* const bucket = storage.bucket("gs://consulta-bd.appspot.com");
+
+  await bucket.upload(req.body.file); */
 
   const querySnapshot = await db.collection("items").get();
 
