@@ -4,11 +4,11 @@ import chalk from "chalk";
 
 import Debug from "debug";
 
-import Axios from "axios";
-
-import { db, storage } from "../../database/index";
+import { db } from "../../database/index";
 
 import download from "../middlewares/download";
+
+import upload from "../middlewares/upload";
 
 const debug = Debug("firebaseback:itemsController");
 
@@ -39,33 +39,22 @@ const postItem = async (
   debug(chalk.blue("Nos llega el item ->"));
   debug(chalk.blue(JSON.stringify(req.body)));
 
+  let newUrl;
+
+  try {
+    newUrl = await upload(req.body.file, req.body.name);
+  } catch (error) {
+    newUrl = "defaultURL";
+  }
+
+  debug(chalk.green(newUrl));
+
+  debug(chalk.blue("Termina la funcion upload!"));
+
+  req.body.publicUrl = newUrl;
+
   await db.collection("items").add(req.body);
 
-  const bucket = storage.bucket("gs://consulta-bd.appspot.com");
-  const file = bucket.file(`files/${req.body.name}.jpg`);
-
-  const url = req.body.file;
-
-  const response = await Axios({
-    method: "GET",
-    url,
-    responseType: "stream",
-  });
-
-  const contentType = response.headers["content-type"];
-
-  console.log(contentType);
-
-  const writeStream = file.createWriteStream({
-    metadata: {
-      contentType,
-      metadata: {
-        myValue: 123,
-      },
-    },
-  });
-
-  await response.data.pipe(writeStream);
   /* await download(req.body.file, req.body.name); */
 
   /* const bucket = storage.bucket("gs://consulta-bd.appspot.com");
